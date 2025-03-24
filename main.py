@@ -1,3 +1,5 @@
+from xml.etree.ElementInclude import include
+from routes.user import router as user_router
 from fastapi import FastAPI
 import uvicorn
 
@@ -13,6 +15,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 def main() -> FastAPI:
+
+    app.include_router(user_router, prefix="/user", tags=["user"])
 
 
     return app
