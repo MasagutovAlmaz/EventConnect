@@ -16,7 +16,7 @@ app = FastAPI(lifespan=lifespan)
 
 def main() -> FastAPI:
 
-    app.include_router(user_router, prefix="/user", tags=["user"])
+    app.include_router(user_router)
 
 
     return app
