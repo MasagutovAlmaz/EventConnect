@@ -1,7 +1,16 @@
 from fastapi import FastAPI
 import uvicorn
 
-app = FastAPI()
+from db.database import init_db, close_db
+
+async def lifespan(app: FastAPI):
+    await init_db()
+    try:
+        yield
+    finally:
+        await close_db()
+
+app = FastAPI(lifespan=lifespan)
 
 def main() -> FastAPI:
 
