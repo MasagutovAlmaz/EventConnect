@@ -12,6 +12,9 @@ class UserResponse(BaseModel):
     email: str
     is_verified: bool
 
+    class Config:
+        from_attributes = True
+
 class RegisterResponse(BaseModel):
     message: str
     user: UserResponse
