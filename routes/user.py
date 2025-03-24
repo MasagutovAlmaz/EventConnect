@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_db
 from db.models import User
-from models.user import RegisterResponse, UserCreate, UserResponse, OTPVerify
-from utils.security import generate_otp, get_password_hash
+from models.user import RegisterResponse, UserCreate, UserResponse, OTPVerify, Token
+from utils.security import generate_otp, get_password_hash, verify_password, create_access_token
 
 router = APIRouter()
 
@@ -35,7 +35,7 @@ def send_verification_email(email: str, otp: str):
         logging.error(f"Ошибка при отправке email: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при отправке email: {e}")
 
-@router.post("/register", response_model=RegisterResponse)
+@router.post("/register", response_model=RegisterResponse, tags=["register"])
 async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     stmt = select(User).filter(User.email == user.email)
     result = await db.execute(stmt)
@@ -79,7 +79,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 
-@router.post("/verify")
+@router.post("/verify", tags=["verify"])
 async def verify_otp(data: OTPVerify, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).filter(User.email == data.email))
     user = result.scalar_one_or_none()
@@ -100,3 +100,15 @@ async def verify_otp(data: OTPVerify, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     return {"message": "Верификация прошла успешно"}
+
+
+
+@router.post("/login", response_model=Token, tags=["login"])
+async def login_user(user_create: UserCreate, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).filter(User.email == user_create.email))
+    user = result.scalar_one_or_none()
+    if not user or not verify_password(user_create.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+
+    access_token = create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
