@@ -1,5 +1,5 @@
-from xml.etree.ElementInclude import include
 from routes.user import router as user_router
+# from routes.event import router as event_router
 from fastapi import FastAPI
 import uvicorn
 
@@ -17,6 +17,7 @@ app = FastAPI(lifespan=lifespan)
 def main() -> FastAPI:
 
     app.include_router(user_router)
+    # app.include_router(event_router)
 
 
     return app
