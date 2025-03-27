@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Boolean, Integer, ForeignKey
 from sqlalchemy.orm import validates, relationship
 
-from db import Base
+from db.database import Base
 
 
 class RegisterEvent(Base):

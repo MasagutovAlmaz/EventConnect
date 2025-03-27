@@ -1,14 +1,12 @@
 import logging
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
-
 from db.database import get_db
-from db.register import RegisterEvent
-from models.register import EventRegistration, EventResponse
+from db.registration import RegisterEvent
+from models.registration import EventRegistration, EventResponse
 
-router = APIRouter(tags=["register-event"])
+router = APIRouter(tags=["register-events"])
 
 
 @router.post("/register-event", summary="Регистрация нового пользователя",
@@ -62,17 +60,7 @@ async def register(data: EventRegistration, db: AsyncSession = Depends(get_db)):
     if not data.agree_personal_data or not data.agree_terms:
         raise HTTPException(status_code=400, detail="Необходимо согласие с условиями")
 
-
-    new_registration = RegisterEvent(
-        full_name=data.full_name,
-        email=str(data.email),
-        phone=data.phone,
-        telegram=data.telegram,
-        company=data.company,
-        agree_personal_data=data.agree_personal_data,
-        agree_terms=data.agree_terms,
-        event_id=data.event_id
-    )
+    new_registration = RegisterEvent(**data.model_dump())
     db.add(new_registration)
     try:
         await db.commit()
@@ -82,6 +70,6 @@ async def register(data: EventRegistration, db: AsyncSession = Depends(get_db)):
         await db.rollback()
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    reg_response = EventResponse.from_orm(new_registration)
+    reg_response = EventResponse(**new_registration.__dict__)
 
     return reg_response

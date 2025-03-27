@@ -1,11 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from db.database import get_db
 from db.event import Event
-from models.event import EventResponse, EventCreateRequest
+from models.event import EventResponse, EventCreateRequest, GetEventResponse
 
-router = APIRouter()
+router = APIRouter(tags=["event"])
 
 @router.post("/events", response_model=EventResponse)
 async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depends(get_db)):
@@ -16,7 +15,8 @@ async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depend
         date=naive_date,
         location=event_data.location,
         timezone=event_data.timezone,
-        is_active=event_data.is_active
+        is_active=event_data.is_active,
+        image_url=event_data.image_url
     )
 
     db.add(new_event)
@@ -30,6 +30,16 @@ async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depend
             detail=f"Ошибка при создании мероприятия: {str(e)}"
         )
 
-    event_response_data = EventResponse.from_orm(new_event)
+
+    event_response_data = EventResponse(**new_event.__dict__)
 
     return event_response_data
+
+@router.get("/events/{event_id}", response_model=GetEventResponse)
+async def get_event(event_id: int, db: AsyncSession = Depends(get_db)):
+    event = await db.get(Event, event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Мероприятие не найдено")
+    event_response = EventResponse(**event.__dict__)
+
+    return event_response

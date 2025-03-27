@@ -1,9 +1,8 @@
-from routes.register import router as event_register_router
+from routes.registration import router as event_register_router
 from routes.event import router as event_router
 from routes.user import router as user_router
 from fastapi import FastAPI
 import uvicorn
-
 from db.database import init_db, close_db
 
 async def lifespan(app: FastAPI):

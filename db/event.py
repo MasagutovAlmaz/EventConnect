@@ -1,6 +1,8 @@
-from sqlalchemy import Column, String, Boolean, Integer, DateTime
-from sqlalchemy.orm import relationship
-from db import Base
+from sqlalchemy import Column, String, Boolean, Integer, DateTime, select, func
+from sqlalchemy.orm import relationship, column_property
+
+from db.registration import Base, RegisterEvent
+
 
 
 class Event(Base):
@@ -11,6 +13,7 @@ class Event(Base):
     location = Column(String, nullable=False)
     timezone = Column(String, default="UTC+3")
     is_active = Column(Boolean, default=True)
+    image_url = Column(String, nullable=True)
 
     registrations = relationship("RegisterEvent", back_populates="event")
 
@@ -18,3 +21,9 @@ class Event(Base):
         if 'date' in kwargs and kwargs['date']:
             kwargs['date'] = kwargs['date'].replace(second=0, microsecond=0)
         super().__init__(**kwargs)
+
+    participants_count = column_property(
+        select(func.count())
+        .where(RegisterEvent.event_id == id)
+        .scalar_subquery()
+    )
