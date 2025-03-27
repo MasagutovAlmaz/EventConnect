@@ -2,14 +2,13 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_db
-from db.models import Event
+from db.event import Event
 from models.event import EventResponse, EventCreateRequest
 
 router = APIRouter()
 
 @router.post("/events", response_model=EventResponse)
 async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depends(get_db)):
-    # Convert datetime to naive by removing timezone info
     naive_date = event_data.date.replace(tzinfo=None)
 
     new_event = Event(

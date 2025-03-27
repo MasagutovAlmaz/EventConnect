@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from db.database import get_db
-from db.models import RegisterEvent
-from models.event_register import EventRegistration, EventResponse
+from db.register import RegisterEvent
+from models.register import EventRegistration, EventResponse
 
 router = APIRouter(tags=["register-event"])
 

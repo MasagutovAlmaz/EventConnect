@@ -1,4 +1,4 @@
-from routes.event_register import router as event_register_router
+from routes.register import router as event_register_router
 from routes.event import router as event_router
 from routes.user import router as user_router
 from fastapi import FastAPI
