@@ -1,18 +1,20 @@
+from dataclasses import Field
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.formparsers import MultiPartParser
 
 from db.database import get_db
-from db.pitch import Pitch
-from models.pitch import ResponsePitches
+from db.pitch import RequestPitch, ContactDataForPitch
+from models.pitch import ResponsePitches, RequestContactData, ResponseContactData
 
 router = APIRouter(tags=["pitch"])
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-@router.post("/pitches")
+@router.post("/pitches-requests")
 async def create_pitch(db: AsyncSession = Depends(get_db),
     city: str = Form(...),
     name_startup: str = Form(...),
@@ -24,20 +26,24 @@ async def create_pitch(db: AsyncSession = Depends(get_db),
     file: UploadFile = File(...)):
 
     file_content = await file.read()
-    if len(file_content) > 100 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Файл слишком большой (максимум 100 МБ)")
+    MultiPartParser.file_content = 100 * 1024 * 1024
+    if len(file_content) > MultiPartParser.file_content:
+        raise HTTPException(
+            status_code=400,
+            detail="Размер файла превышает 100 МБ"
+        )
 
-    new_pitch = Pitch(
+    new_pitch = RequestPitch(
         city=city,
         name_startup=name_startup,
         url_site=url_site,
         stage=stage,
         description_startup=description_startup,
         business=business,
-        Presentation=presentation
+        presentation=presentation
     )
 
-    if not isinstance(new_pitch.Presentation, str) or not new_pitch.Presentation.strip():
+    if not isinstance(new_pitch.presentation, str) or not new_pitch.presentation.strip():
         raise ValueError("Строка 'Presentation' должна быть не пустой")
 
     db.add(new_pitch)
@@ -59,3 +65,33 @@ async def create_pitch(db: AsyncSession = Depends(get_db),
     await db.commit()
 
     return ResponsePitches(**vars(new_pitch))
+
+
+@router.post("/pitch-contact-form", response_model=ResponseContactData)
+async def create_pitch_contact_form(data: RequestContactData,db: AsyncSession = Depends(get_db)):
+    if not data.agree_terms:
+        raise HTTPException(status_code=400, detail="Необходимо согласие с условиями")
+
+    new_pitch = ContactDataForPitch(
+        name=data.name,
+        second_name=data.second_name,
+        email=data.email,
+        phone=data.phone,
+        url_social_media=data.url_social_media,
+        agree_terms=data.agree_terms
+    )
+
+    db.add(new_pitch)
+    try:
+        await db.commit()
+        await db.refresh(new_pitch)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при создании питча: {str(e)}"
+        )
+
+    pitch_response = ResponseContactData(**vars(new_pitch))
+
+    return pitch_response

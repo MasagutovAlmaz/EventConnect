@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class ResponsePitches(BaseModel):
     id: int
@@ -8,4 +8,21 @@ class ResponsePitches(BaseModel):
     stage: str
     description_startup: str
     business: str
-    Presentation: str
+    presentation: str
+
+class RequestContactData(BaseModel):
+    name: str
+    second_name: str
+    email: str
+    phone: str
+    url_social_media: str
+    agree_terms: bool = Field(..., description="Необходимо согласится с условиями")
+
+class ResponseContactData(BaseModel):
+    id: int
+    name: str
+    second_name: str
+    email: str
+    phone: str
+    url_social_media: str
+    agree_terms: bool
