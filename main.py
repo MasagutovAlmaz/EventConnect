@@ -1,6 +1,7 @@
 from routes.registration import router as event_register_router
 from routes.event import router as event_router
 from routes.user import router as user_router
+from routes.pitch import router as pitch_router
 from fastapi import FastAPI
 import uvicorn
 from db.database import init_db, close_db
@@ -19,6 +20,7 @@ def main() -> FastAPI:
     app.include_router(event_register_router)
     app.include_router(event_router)
     app.include_router(user_router)
+    app.include_router(pitch_router)
 
 
     return app
