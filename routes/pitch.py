@@ -3,7 +3,6 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.formparsers import MultiPartParser
 
 from db.database import get_db
 from db.pitch import RequestPitch, ContactDataForPitch
@@ -13,6 +12,8 @@ router = APIRouter(tags=["pitch"])
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
+MAX_SIZE = 100 * 1024 * 1024
+ALLOWED_EXTENSIONS = {"pdf", "docx", "pptx", "txt"}
 
 @router.post("/pitches-requests")
 async def create_pitch(db: AsyncSession = Depends(get_db),
@@ -25,13 +26,19 @@ async def create_pitch(db: AsyncSession = Depends(get_db),
     presentation: str = Form(...),
     file: UploadFile = File(...)):
 
+
     file_content = await file.read()
-    MultiPartParser.file_content = 100 * 1024 * 1024
-    if len(file_content) > MultiPartParser.file_content:
-        raise HTTPException(
-            status_code=400,
-            detail="Размер файла превышает 100 МБ"
-        )
+    if presentation:
+        if file.size > MAX_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail="Размер файла превышает 100 MB"
+            )
+        if file.filename.split('.')[-1] not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail="Недопустимый формат файла. Допустимые форматы: .pdf, .docx, .pptx, .txt"
+            )
 
     new_pitch = RequestPitch(
         city=city,

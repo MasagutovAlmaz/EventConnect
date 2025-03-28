@@ -16,7 +16,7 @@ class RequestContactData(BaseModel):
     email: str
     phone: str
     url_social_media: str
-    agree_terms: bool = Field(..., description="Необходимо согласится с условиями")
+    agree_terms: bool
 
 class ResponseContactData(BaseModel):
     id: int
