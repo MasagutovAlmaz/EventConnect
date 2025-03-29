@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, Integer, DateTime, select, func
+from sqlalchemy import Column, String, Boolean, Integer, DateTime, select, func, Sequence
 from sqlalchemy.orm import relationship, column_property
 
 from db.registration import Base, RegisterEvent
@@ -7,7 +7,8 @@ from db.registration import Base, RegisterEvent
 
 class Event(Base):
     __tablename__ = "events"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    count = Column(Integer, Sequence('event_count_seq'), nullable=False, unique=True)
     title = Column(String, nullable=False)
     date = Column(DateTime(timezone=False))
     location = Column(String, nullable=False)

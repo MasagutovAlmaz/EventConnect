@@ -17,6 +17,7 @@ class EventCreateRequest(BaseModel):
 
 class EventResponse(BaseModel):
     id: int
+    count: int
     title: str
     date: datetime
     location: str
@@ -32,6 +33,17 @@ class EventResponse(BaseModel):
             int: lambda v: None if v == 0 else v # убрал participants_count
         }
 
+class GetEventParticipantCountResponse(BaseModel):
+    id: int
+    count: int
+    participants_count: int = 0
+
 class GetEventResponse(BaseModel):
     id: int
-    participants_count: int = 0
+    count: int
+    title: str
+    date: datetime
+    location: str
+    timezone: str = "UTC+3"
+    image_url: str
+    description: str
