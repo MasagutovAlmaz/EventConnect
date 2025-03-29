@@ -15,6 +15,7 @@ async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depend
     max_count = result.scalar() or 0
 
     new_event = Event(
+        count=max_count + 1,
         title=event_data.title,
         date=naive_date,
         location=event_data.location,
@@ -48,6 +49,13 @@ async def get_even_participant_count(event_id: int, db: AsyncSession = Depends(g
 
     return event_response
 
+@router.get("/events/all", response_model=list[GetEventResponse])
+async def get_event_all(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Event))
+    events = result.scalars().all()
+
+    return [GetEventResponse(**event.__dict__) for event in events]
+
 @router.get("/events/{event_id}", response_model=GetEventResponse)
 async def get_event(event_id: int, db: AsyncSession = Depends(get_db)):
     event = await db.get(Event, event_id)
@@ -57,10 +65,3 @@ async def get_event(event_id: int, db: AsyncSession = Depends(get_db)):
     event_response = EventResponse(**event.__dict__)
 
     return event_response
-
-@router.get("/events/{event_id}/all", response_model=list[GetEventResponse])
-async def get_event_all(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Event))
-    events = result.scalars().all()
-
-    return [GetEventResponse(**event.__dict__) for event in events]
