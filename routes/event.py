@@ -18,7 +18,8 @@ async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depend
         location=event_data.location,
         timezone=event_data.timezone,
         is_active=event_data.is_active,
-        image_url=event_data.image_url
+        image_url=event_data.image_url,
+        description=event_data.description,
     )
 
     db.add(new_event)

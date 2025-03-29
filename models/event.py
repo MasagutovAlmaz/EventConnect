@@ -9,6 +9,7 @@ class EventCreateRequest(BaseModel):
     is_active: bool = True
     timezone: str = "UTC+3"
     image_url: str
+    description: str
 
     @field_validator('date')
     def truncate_seconds(cls, v):
@@ -22,6 +23,7 @@ class EventResponse(BaseModel):
     participants_count: int = 0
     timezone: str = "UTC+3"
     image_url: str
+    description: str
 
     class Config:
         from_attributes = True

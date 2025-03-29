@@ -14,6 +14,7 @@ class Event(Base):
     timezone = Column(String, default="UTC+3")
     is_active = Column(Boolean, default=True)
     image_url = Column(String, nullable=True)
+    description = Column(String, nullable=True)
 
     registrations = relationship("RegisterEvent", back_populates="event")
 
