@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 from routes.registration import router as event_register_router
 from routes.event import router as event_router
@@ -20,12 +20,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+origins = [
+    "http://localhost:3000",
+    "https://a3f5-91-103-252-227.ngrok-free.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:*"],  # Specify allowed origins
+    allow_origins=origins,  # Specify allowed origins
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
+    allow_methods=["GET", "POST"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],
 )
 
 def main() -> FastAPI:
