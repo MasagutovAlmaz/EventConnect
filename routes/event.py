@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.database import get_db
 from db.event import Event
@@ -11,18 +11,15 @@ router = APIRouter(tags=["event"])
 async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depends(get_db)):
     naive_date = event_data.date.replace(tzinfo=None)
 
-    result = await db.execute(select(func.max(Event.count)))
-    max_count = result.scalar() or 0
 
     new_event = Event(
-        count=max_count + 1,
         title=event_data.title,
         date=naive_date,
         location=event_data.location,
         timezone=event_data.timezone,
         is_active=event_data.is_active,
         image_url=event_data.image_url,
-        description=event_data.description,
+        time=event_data.time
     )
 
     db.add(new_event)
@@ -65,3 +62,51 @@ async def get_event(event_id: int, db: AsyncSession = Depends(get_db)):
     event_response = EventResponse(**event.__dict__)
 
     return event_response
+
+@router.delete("/events/{event_id}")
+async def delete_event(event_id: int, db: AsyncSession = Depends(get_db)):
+    event = await db.get(Event, event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Мероприятие не найдено")
+
+    await db.delete(event)
+    try:
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при удалении мероприятия: {str(e)}"
+        )
+
+    return {"detail": "Мероприятие успешно удалено"}
+
+@router.put("/events/{event_id}", response_model=EventResponse)
+async def update_event(event_id: int, event_data: EventCreateRequest, db: AsyncSession = Depends(get_db)):
+    event = await db.get(Event, event_id)
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Мероприятие не найдено")
+
+    naive_date = event_data.date.replace(tzinfo=None)
+
+    event.title = event_data.title
+    event.date = naive_date
+    event.location = event_data.location
+    event.timezone = event_data.timezone
+    event.is_active = event_data.is_active
+    event.image_url = event_data.image_url
+    event.time = event_data.time
+
+    db.add(event)
+    try:
+        await db.commit()
+        await db.refresh(event)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при обновлении мероприятия: {str(e)}"
+        )
+
+    return EventResponse(**event.__dict__)
+
