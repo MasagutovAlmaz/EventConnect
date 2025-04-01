@@ -1,5 +1,7 @@
 from datetime import datetime
-from pydantic import BaseModel, field_validator, PrivateAttr
+from typing import Optional
+
+from pydantic import BaseModel, field_validator
 
 
 class EventCreateRequest(BaseModel):
@@ -9,7 +11,7 @@ class EventCreateRequest(BaseModel):
     is_active: bool = True
     timezone: str = "UTC+3"
     image_url: str
-    description: str
+    time: str = "19:00"
 
     @field_validator('date')
     def truncate_seconds(cls, v):
@@ -17,14 +19,14 @@ class EventCreateRequest(BaseModel):
 
 class EventResponse(BaseModel):
     id: int
-    count: int
     title: str
     date: datetime
+    is_active: bool
     location: str
     participants_count: int = 0
     timezone: str = "UTC+3"
     image_url: str
-    description: str
+    time: str
 
     class Config:
         from_attributes = True
@@ -35,15 +37,14 @@ class EventResponse(BaseModel):
 
 class GetEventParticipantCountResponse(BaseModel):
     id: int
-    count: int
     participants_count: int = 0
 
 class GetEventResponse(BaseModel):
     id: int
-    count: int
     title: str
     date: datetime
     location: str
-    timezone: str = "UTC+3"
     image_url: str
-    description: str
+    is_active: bool
+    time: str
+    timezone: str = "UTC+3"
