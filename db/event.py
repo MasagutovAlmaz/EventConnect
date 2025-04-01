@@ -28,15 +28,3 @@ class Event(Base):
         .where(RegisterEvent.event_id == id)
         .scalar_subquery()
     )
-
-class PastEvent(Base):
-    __tablename__ = "past_events"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String, nullable=False)
-    date = Column(DateTime(timezone=False))
-    location = Column(String, nullable=False)
-    timezone = Column(String, default="UTC+3")
-    is_active = Column(Boolean, default=True)
-    image_url = Column(String, nullable=True)
-    time = Column(String, nullable=True)
