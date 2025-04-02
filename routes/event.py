@@ -1,5 +1,9 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from sqlalchemy import select
+from datetime import datetime, timezone, timedelta
+
+from fastapi import APIRouter, HTTPException, status, Depends, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.database import get_db
 from db.event import Event
@@ -7,14 +11,20 @@ from models.event import EventResponse, EventCreateRequest, GetEventParticipantC
 
 router = APIRouter(tags=["event"])
 
-@router.post("/events", response_model=EventResponse)
-async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depends(get_db)):
-    naive_date = event_data.date.replace(tzinfo=None)
+limiter = Limiter(key_func=get_remote_address)
 
+
+@router.post("/events", response_model=EventResponse)
+@limiter.limit("5/minute")
+async def create_event(request: Request, event_data: EventCreateRequest, db: AsyncSession = Depends(get_db)):
+    if event_data.date is None:
+        raise HTTPException(status_code=400, detail="Поле 'date' обязательно")
 
     new_event = Event(
         title=event_data.title,
-        date=naive_date,
+        date=event_data.date,
+        current_date=event_data.date,
+        end_date=event_data.end_date,
         location=event_data.location,
         timezone=event_data.timezone,
         is_active=event_data.is_active,
@@ -37,18 +47,35 @@ async def create_event(event_data: EventCreateRequest, db: AsyncSession = Depend
 
     return event_response_data
 
+
 @router.get("/events/count/{event_id}", response_model=GetEventParticipantCountResponse)
-async def get_even_participant_count(event_id: int, db: AsyncSession = Depends(get_db)):
+async def get_event_participant_count(event_id: int, db: AsyncSession = Depends(get_db)):
     event = await db.get(Event, event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Мероприятие не найдено")
     event_response = EventResponse(**event.__dict__)
 
     return event_response
+@router.get("/events/past-all", response_model=list[GetEventResponse])
+async def get_event_past_all(db: AsyncSession = Depends(get_db)):
+    current_time = datetime.now(timezone.utc)
+    stmt = (
+        update(Event)
+        .where(Event.end_date < current_time)
+        .where(Event.is_active == True)
+        .values(is_active=False)
+    )
+    await db.execute(stmt)
+    await db.commit()
+    result = await db.execute(select(Event).where(Event.end_date < current_time))
+    events = result.scalars().all()
 
-@router.get("/events/all", response_model=list[GetEventResponse])
-async def get_event_all(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Event))
+    return [GetEventResponse(**event.__dict__) for event in events]
+
+@router.get("/events/current-all", response_model=list[GetEventResponse])
+async def get_event_current_all(db: AsyncSession = Depends(get_db)):
+    current_time = datetime.now(timezone.utc)
+    result = await db.execute(select(Event).where(Event.current_date <= current_time, Event.end_date >= current_time))
     events = result.scalars().all()
 
     return [GetEventResponse(**event.__dict__) for event in events]
