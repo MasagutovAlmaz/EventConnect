@@ -1,5 +1,7 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from db.database import get_db
@@ -7,6 +9,8 @@ from db.registration import RegisterEvent
 from models.registration import EventRegistration, EventResponse
 
 router = APIRouter(tags=["register-events"])
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register-event", summary="Регистрация нового пользователя",
@@ -56,7 +60,8 @@ router = APIRouter(tags=["register-events"])
         }
     }
 )
-async def register(data: EventRegistration, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register(request: Request, data: EventRegistration, db: AsyncSession = Depends(get_db)):
     if not data.agree_personal_data or not data.agree_terms:
         raise HTTPException(status_code=400, detail="Необходимо согласие с условиями")
 
