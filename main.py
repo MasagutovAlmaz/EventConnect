@@ -1,13 +1,16 @@
 from contextlib import asynccontextmanager
 
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
+from starlette.responses import JSONResponse
 
 from routes.registration import router as event_register_router
 from routes.event import router as event_router
 from routes.pitch import router as pitch_router
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 import uvicorn
 from db.database import init_db, close_db
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,9 +22,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
 origins = [
     "http://localhost:3000",
-    "https://5029-78-92-147-86.ngrok-free.app",
+    "https://af4f-78-92-147-86.ngrok-free.app",
 ]
 
 app.add_middleware(
@@ -34,6 +38,12 @@ app.add_middleware(
 )
 
 def main() -> FastAPI:
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Слишком много запрос, дождитесь перезагрузки."},
+        )
 
     app.include_router(event_register_router)
     app.include_router(event_router)
