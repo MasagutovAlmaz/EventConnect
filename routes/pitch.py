@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.database import get_db
@@ -9,13 +11,17 @@ from models.pitch import ResponsePitches, RequestContactData, ResponseContactDat
 
 router = APIRouter(tags=["pitch"])
 
+limiter = Limiter(key_func=get_remote_address)
+
+
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 MAX_SIZE = 100 * 1024 * 1024
 ALLOWED_EXTENSIONS = {"pdf", "docx", "pptx", "txt"}
 
 @router.post("/pitches-requests")
-async def create_pitch(db: AsyncSession = Depends(get_db),
+@limiter.limit("5/minute")
+async def create_pitch(request: Request, db: AsyncSession = Depends(get_db),
     city: str = Form(...),
     name_startup: str = Form(...),
     url_site: str = Form(...),
@@ -74,7 +80,8 @@ async def create_pitch(db: AsyncSession = Depends(get_db),
 
 
 @router.post("/pitch-contact-form", response_model=ResponseContactData)
-async def create_pitch_contact_form(data: RequestContactData,db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def create_pitch_contact_form(request: Request, data: RequestContactData,db: AsyncSession = Depends(get_db)):
     if not data.agree_terms:
         raise HTTPException(status_code=400, detail="Необходимо согласие с условиями")
 
