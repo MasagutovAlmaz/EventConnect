@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr
 
 
@@ -6,7 +8,7 @@ class EventRegistration(BaseModel):
     email: EmailStr
     phone: str
     telegram: str
-    company: str | None = None
+    company: Optional[str] = None
     agree_personal_data: bool
     agree_terms: bool
     event_id: int
@@ -17,7 +19,7 @@ class EventResponse(BaseModel):
     email: EmailStr
     phone: str
     telegram: str
-    company: str | None = None
+    company: Optional[str] = None
     event_id: int
 
     class Config:
